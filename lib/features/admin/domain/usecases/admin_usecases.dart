@@ -1,7 +1,5 @@
 import 'package:smart_qr_attendance/features/admin/domain/entities/admin_entities.dart';
 import 'package:smart_qr_attendance/features/admin/domain/repositories/admin_repository.dart';
-import 'package:smart_qr_attendance/features/attendance/domain/entities/attendance_entity.dart';
-import 'package:smart_qr_attendance/features/auth/domain/entities/user_entity.dart';
 
 class LoadAdminDashboardUseCase {
   LoadAdminDashboardUseCase(this._repository);

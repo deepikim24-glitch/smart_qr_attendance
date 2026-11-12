@@ -28,6 +28,13 @@ class AdminQrDeactivated extends AdminEvent {
   const AdminQrDeactivated();
 }
 
+class AdminQrAutoRefreshToggled extends AdminEvent {
+  const AdminQrAutoRefreshToggled(this.enabled);
+  final bool enabled;
+  @override
+  List<Object?> get props => [enabled];
+}
+
 class AdminTicked extends AdminEvent {
   const AdminTicked();
 }

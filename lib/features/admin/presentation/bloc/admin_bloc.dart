@@ -24,6 +24,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     on<AdminDateFiltered>(_onFilter);
     on<AdminQrGenerated>(_onGenerate);
     on<AdminQrDeactivated>(_onDeactivate);
+    on<AdminQrAutoRefreshToggled>(_onAutoRefreshToggled);
     on<AdminTicked>(_onTick);
   }
 
@@ -31,6 +32,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
   final GenerateQrUseCase _generateQr;
   final DeactivateQrUseCase _deactivateQr;
   Timer? _timer;
+  bool _renewing = false;
 
   Future<void> _onLoad(
     AdminDashboardRequested event,
@@ -63,6 +65,9 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
         session: snapshot.activeSession,
         remaining: _remaining(snapshot.activeSession),
       ));
+      if (_remaining(snapshot.activeSession) > Duration.zero) {
+        _startTicker();
+      }
     } on Failure catch (failure) {
       emit(state.copyWith(status: AdminStatus.failure, message: failure.message));
     }
@@ -72,17 +77,26 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     AdminQrGenerated event,
     Emitter<AdminState> emit,
   ) async {
-    emit(state.copyWith(status: AdminStatus.generating));
+    emit(state.copyWith(
+      status: AdminStatus.generating,
+      qrExpirySeconds: event.expirySeconds,
+      autoRefresh: true,
+    ));
     try {
       final session = await _generateQr(expirySeconds: event.expirySeconds);
       emit(state.copyWith(
         status: AdminStatus.success,
         session: session,
         remaining: _remaining(session),
+        qrExpirySeconds: event.expirySeconds,
       ));
       _startTicker();
+      _renewing = false;
     } on Failure catch (failure) {
       emit(state.copyWith(status: AdminStatus.failure, message: failure.message));
+      Timer(const Duration(seconds: 5), () {
+        _renewing = false;
+      });
     }
   }
 
@@ -95,9 +109,11 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     try {
       final session = await _deactivateQr(current.id);
       _timer?.cancel();
+      _renewing = false;
       emit(state.copyWith(
         session: session,
         remaining: Duration.zero,
+        autoRefresh: false,
         clearPayload: true,
       ));
     } on Failure catch (failure) {
@@ -105,10 +121,29 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     }
   }
 
+  void _onAutoRefreshToggled(
+    AdminQrAutoRefreshToggled event,
+    Emitter<AdminState> emit,
+  ) {
+    emit(state.copyWith(autoRefresh: event.enabled));
+    if (!event.enabled) return;
+    _startTicker();
+    if (_remaining(state.session) == Duration.zero && !_renewing) {
+      _renewing = true;
+      add(AdminQrGenerated(expirySeconds: state.qrExpirySeconds));
+    }
+  }
+
   void _onTick(AdminTicked event, Emitter<AdminState> emit) {
     final remaining = _remaining(state.session);
     emit(state.copyWith(remaining: remaining));
-    if (remaining == Duration.zero) {
+    if (remaining > Duration.zero) return;
+    if (state.autoRefresh && !_renewing && state.status != AdminStatus.generating) {
+      _renewing = true;
+      add(AdminQrGenerated(expirySeconds: state.qrExpirySeconds));
+      return;
+    }
+    if (!state.autoRefresh) {
       _timer?.cancel();
     }
   }
