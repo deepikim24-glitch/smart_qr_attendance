@@ -20,7 +20,7 @@ smart_qr_attendance/
 - Email/password login with JWT stored in secure storage
 - Role-based admin and employee experiences
 - Cryptographically random QR tokens (hash-only at rest)
-- Configurable QR expiry (default 2 minutes) and session deactivation
+- Configurable QR expiry (default 2 minutes), session deactivation, and admin QR auto-refresh
 - Transaction-safe check-in / check-out with one row per employee per UTC day
 - Attendance history, admin dashboard, employee list, date filters
 - Camera, GPS, offline, timeout, and HTTP error handling
@@ -99,9 +99,9 @@ Windows / iOS simulator / web:
 flutter run --dart-define=API_BASE_URL=http://127.0.0.1:3000
 ```
 
-Physical phone: use your computer's LAN IP, e.g. `http://192.168.1.20:3000`, and allow that origin if you tighten CORS.
+Physical phone: set `lib/core/constants/api_constants.dart` `baseUrl` to `http://<PC_LAN_IP>:3000` (no `/api` suffix). Allow TCP 3000 in Windows Firewall. Phone and PC must share Wi-Fi.
 
-Without `--dart-define`, the app uses `http://10.0.2.2:3000` on Android and `http://127.0.0.1:3000` elsewhere.
+Optional override: `flutter run --dart-define=API_BASE_URL=http://127.0.0.1:3000` only if you restore the `String.fromEnvironment` lookup.
 
 ## Test credentials (seed / local only)
 
@@ -123,9 +123,13 @@ Or import `docs/Smart_QR_Attendance.postman_collection.json` into Postman.
 
 Typical flow: Admin login → Generate QR → Employee login → Mark attendance (twice) → History / Admin dashboard.
 
-## Screenshots
+## Submission
 
-Capture the login screen, admin QR page with countdown, employee scanner, success screen, and admin attendance table for the demonstration video. Place images here if you add them later.
+See **[SUBMISSION.md](SUBMISSION.md)** for the source zip, setup checklist, architecture summary, and demonstration-video shot list.
+
+## Screenshots / demo video
+
+Record: login, admin QR with countdown and auto-refresh, employee scanner, success screen, employee history, admin attendance table. Shot list is in `SUBMISSION.md`.
 
 ## Tests
 

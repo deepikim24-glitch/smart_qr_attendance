@@ -20,7 +20,7 @@ The client never decides whether a scan is valid. It only collects a QR payload,
 
 1. Admin signs in. `AuthBloc` stores the JWT in `flutter_secure_storage`.
 2. Admin generates a QR session. The API returns `{ sessionId, token }` once. PostgreSQL stores **only** `sha256(token)`.
-3. The Flutter admin screen renders that payload with `qr_flutter` and counts down locally for UX. Expiry is still enforced with `NOW()` on the server.
+3. The Flutter admin screen renders that payload with `qr_flutter` and counts down locally for UX. When auto-refresh is on, `AdminBloc` generates a new session as soon as remaining time hits zero. Expiry is still enforced with `NOW()` on the server.
 4. An employee scans with `mobile_scanner`, parses JSON, requests GPS, and POSTs `/api/attendance/mark`.
 5. The API opens a transaction, locks the session and the employee's day row (`SELECT … FOR UPDATE`), then inserts check-in or updates check-out.
 
@@ -31,7 +31,7 @@ The client never decides whether a scan is valid. It only collects a QR payload,
 | `AuthBloc` | Restore session, login, logout, expired JWT |
 | `AttendanceBloc` | Employee history and date filters |
 | `QRScannerBloc` | Camera permission, parse QR, GPS, single in-flight mark request |
-| `AdminBloc` | Dashboard stats, employee list, attendance table, QR generate/deactivate, countdown ticks |
+| `AdminBloc` | Dashboard stats, employee list, attendance table, QR generate/deactivate, countdown ticks, QR auto-refresh |
 
 Widgets do not call Dio. UI listens with `BlocBuilder` / `BlocListener` / `BlocConsumer`.
 
