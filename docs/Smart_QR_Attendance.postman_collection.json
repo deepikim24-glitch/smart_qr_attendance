@@ -1,0 +1,158 @@
+{
+  "info": {
+    "name": "Smart QR Attendance",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "adminToken", "value": "" },
+    { "key": "employeeToken", "value": "" },
+    { "key": "sessionId", "value": "" },
+    { "key": "qrToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+    },
+    {
+      "name": "Admin login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.data && json.data.token) {",
+              "  pm.collectionVariables.set('adminToken', json.data.token);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@company.com\",\n  \"password\": \"Admin@12345\"\n}"
+        },
+        "url": "{{baseUrl}}/api/auth/login"
+      }
+    },
+    {
+      "name": "Employee login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.data && json.data.token) {",
+              "  pm.collectionVariables.set('employeeToken', json.data.token);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"employee@company.com\",\n  \"password\": \"Employee@12345\"\n}"
+        },
+        "url": "{{baseUrl}}/api/auth/login"
+      }
+    },
+    {
+      "name": "Profile",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{employeeToken}}" }],
+        "url": "{{baseUrl}}/api/auth/profile"
+      }
+    },
+    {
+      "name": "Generate QR",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.data && json.data.payload) {",
+              "  pm.collectionVariables.set('sessionId', json.data.payload.sessionId);",
+              "  pm.collectionVariables.set('qrToken', json.data.payload.token);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"expirySeconds\": 120\n}" },
+        "url": "{{baseUrl}}/api/qr/generate"
+      }
+    },
+    {
+      "name": "Mark attendance",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{employeeToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sessionId\": \"{{sessionId}}\",\n  \"qrToken\": \"{{qrToken}}\",\n  \"latitude\": 11.6643,\n  \"longitude\": 78.1460\n}"
+        },
+        "url": "{{baseUrl}}/api/attendance/mark"
+      }
+    },
+    {
+      "name": "History",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{employeeToken}}" }],
+        "url": "{{baseUrl}}/api/attendance/history"
+      }
+    },
+    {
+      "name": "Admin dashboard",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/admin/dashboard"
+      }
+    },
+    {
+      "name": "Admin employees",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/admin/employees"
+      }
+    },
+    {
+      "name": "Admin attendance",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/admin/attendance"
+      }
+    },
+    {
+      "name": "Employee blocked from admin",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{employeeToken}}" }],
+        "url": "{{baseUrl}}/api/admin/dashboard"
+      }
+    }
+  ]
+}
